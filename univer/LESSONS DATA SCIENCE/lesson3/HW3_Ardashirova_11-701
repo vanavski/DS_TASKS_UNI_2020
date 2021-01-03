@@ -1,0 +1,124 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from random import randint
+
+X = np.array([[1, 2], [1, 4], [1, 0], [4, 2], [8, 4], [6, 0]])
+color_list = np.array(['red', 'blue', 'green', 'yellow', '#377eb8', '4daf4a', 'black'])
+
+
+class K_Means():
+    def __init__(self, dataset, n_clusters=3):
+        self.dataset = dataset
+        self.n_clusters = n_clusters
+        self.max_n_inter = 100
+        self.tolerance = .01  # минимальное движение центров кластеров
+        self.fitted = False
+        self.labels = np.array([])
+        self.centroids = self.set_up_centroids()
+        self.method = ''
+
+    def distribute_data(self):
+        self.labels = np.array([])
+        for elem in self.dataset:
+            dist = [self.get_dist(elem, center) for center in self.centroids]
+            self.labels = np.append(self.labels, [dist.index(min(dist))]).astype(int)
+
+    def recalculate_centroids(self):
+        for i in range(self.n_clusters):
+            num = 0
+            temp = np.zeros(len(self.dataset[0]))
+            for k, label in enumerate(self.labels):
+                if label == i:
+                    num += 1
+                    temp += self.dataset[k]
+            self.centroids[i] = temp / num
+
+    def fit(self):
+        iter = 1
+        while iter < self.max_n_inter:
+            prev_centroids = np.copy(self.centroids)
+            self.distribute_data()
+            self.recalculate_centroids()
+            if max([self.get_dist(i, j) for i, j in zip(prev_centroids, self.centroids)]) < self.tolerance:
+                break
+        self.fitted = True
+
+    def set_up_centroids(self):
+        result = np.zeros((self.n_clusters, 2))
+        max_elem = np.amax(self.dataset)
+        min_elem = np.amin(self.dataset)
+
+        for i in range(self.n_clusters):
+            elem = [randint(min_elem, max_elem), randint(min_elem, max_elem)]
+            result = np.append(result, [elem], axis=0)
+            result = np.delete(result, 0, axis=0)
+        return result
+
+    def predict(self, coords):
+        clusters_indexes = np.array([])
+        # узнать кластер точки и у кластера узнать индекс
+        for elem in coords:
+            dist = [self.get_dist(elem, center) for center in self.centroids]
+            clusters_indexes = np.append(clusters_indexes, [dist.index(min(dist))]).astype(int)
+
+        for i in clusters_indexes:
+            clusters_indexes = np.append(clusters_indexes, [i.index(i)]).astype(int)
+        return clusters_indexes
+
+    def choose_calculating_method(self):
+        iter = 1
+        while iter == 1:
+            print('Введите название метода')
+            self.method = input()
+            iter = iter - 1
+
+    def get_dist(self, list1, list2):
+        if self.method == 'Evklid':
+            return self.get_dist_Evklid(list1, list2)
+        elif self.method == 'square_Evklid':
+            return self.get_square_Evklid_dist(list1, list2)
+        elif self.method == 'Chebyshev':
+            return self.get_Chebyshev_dist(list1, list2)
+        elif self.method == 'Manhattan':
+            return self.get_Manh_dist(list1, list2)
+
+    def get_dist_Evklid(self, list1, list2):
+        return np.sqrt(sum((i - j) ** 2 for i, j in zip(list1, list2)))
+
+    def get_square_Evklid_dist(self, list1, list2):
+        return sum((i - j) ** 2 for i, j in zip(list1, list2))
+
+    def get_Chebyshev_dist(self, list1, list2):
+        return max(abs(i - j) for i, j in zip(list1, list2))
+
+    def get_Manh_dist(self, list1, list2):
+        return sum(abs(i - j) for i, j in zip(list1, list2))
+
+
+kmeans = K_Means(X, 2)
+kmeans.choose_calculating_method()
+kmeans.fit()
+
+plt.figure()
+plt.scatter(X[:, 0], X[:, 1], c=color_list[kmeans.labels])
+plt.scatter(kmeans.centroids[:, 0], kmeans.centroids[:, 1], c='black', marker='x')
+plt.show()
+# print(kmeans.get_dist(X[0], X[5]))
+# kmeans.distribute_data()
+# print(kmeans.labels)
+# kmeans.recalculate_centroids()
+# print(kmeans.centroids)
+
+
+# 1. Определить принадлежности точек какому-то кластеру: найти расстояние от точек до центров кластеров.
+# Если точка ближе к одному центру, то она принадлежит этому кластеру
+# 2. Пересчет центра. Находим среднее по x, y, z.... координатам и ставим новый центр кластера в эту точку.
+# 3. Определяем принадлежность точек к кластерам заново по новым центрам.
+# Продолжаем, пока центры кластеров не перестанут смещаться/не станут смещаться на маленькое расстояние.
+
+# ДЗ: 1. реализовать выбор начальных центров кластеров
+# случайная координата из диапазона [минимальная координата, максимальная координата] в datasete
+# 2. Добавить метод предсказания predict. На вход - список новых точек. На выход получить список labels - соотношение к кластерам.
+# 3. Добавить новые метрики. Квадрат евклидовой метрики (без корня). Метрика городских кварталов = sum|x(i)-y(i)|.
+# max|x(i) - y(i)| - максимум расстояния между двумя координатами (только по х, только по у и тд)
+# Сделать возможность выбора рассчета расстояния.

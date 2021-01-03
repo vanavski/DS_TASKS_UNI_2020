@@ -127,3 +127,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+univer/UNIVERSITY_ALSU/last2/viz/strahovanie.csv
+univer/UNIVERSITY_ALSU/data.csv
